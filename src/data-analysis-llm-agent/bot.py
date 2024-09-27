@@ -3,11 +3,16 @@ import logging
 import os
 import json
 
+logging.info(f"User message")
 
 import httpx
 from groq import AsyncGroq
 
-logging.info(f"User message")
+
+# Set the API key directly in the code for testing
+os.environ["GROQ_API_KEY"] = "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"
+
+
 
 model = "llama3-8b-8192"
 client = AsyncGroq(
