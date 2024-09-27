@@ -1,17 +1,17 @@
-import asyncio
 import logging
 import os
 import json
-
-
-import httpx
-from openai import AsyncOpenAI
+from langchain_groq import ChatGroq
 
 logging.info(f"User message")
 
-model = "gpt-3.5-turbo-1106"
-client = AsyncOpenAI(
-    api_key=os.environ.get("OPENAI_API_KEY")
+# Initialize the synchronous ChatGroq client
+client = ChatGroq(
+    model="llama3-groq-70b-8192-tool-use-preview",
+    temperature=0,
+    max_tokens=None,
+    timeout=None,
+    max_retries=2,
 )
 
 # Main chatbot class
@@ -25,9 +25,9 @@ class ChatBot:
         if self.system:
             self.messages.append({"role": "system", "content": system})
 
-    async def __call__(self, message):
+    def __call__(self, message):
         self.messages.append({"role": "user", "content": f"""{message}"""})
-        response_message = await self.execute()
+        response_message = self.execute()
         # for function call sometimes this can be empty
         if response_message.content:
             self.messages.append({"role": "assistant", "content": response_message.content})
@@ -37,24 +37,26 @@ class ChatBot:
 
         return response_message
 
-    async def execute(self):
-        #print(self.messages)
-        completion = await client.chat.completions.create(
-            model=model,
-            messages=self.messages,
-            tools = self.tools
-        )
-        print(completion)
-        assistant_message = completion.choices[0].message
+    def execute(self):
+        # Invoke the ChatGroq model
+        completion = client.invoke("\n".join(
+            f"{msg['role']}: {msg['content']}" for msg in self.messages
+        ))
+        
+        print(completion)  # Log or print the response for debugging
+        assistant_message = {
+            "role": "assistant",
+            "content": completion  # Adjust according to the format of the response
+        }
 
         return assistant_message
 
-    async def call_function(self, tool_call):
+    def call_function(self, tool_call):
         function_name = tool_call.function.name
         function_to_call = self.tool_functions[function_name]
         function_args = json.loads(tool_call.function.arguments)
         logging.info(f"Calling {function_name} with {function_args}")
-        function_response = await function_to_call(**function_args)
+        function_response = function_to_call(**function_args)
 
         return {
             "tool_call_id": tool_call.id,
@@ -63,12 +65,9 @@ class ChatBot:
             "content": function_response,
         }
 
-    async def call_functions(self, tool_calls):
-
-        # Use asyncio.gather to make function calls in parallel
-        function_responses = await asyncio.gather(
-            *(self.call_function(tool_call) for tool_call in tool_calls)
-            )
+    def call_functions(self, tool_calls):
+        # Make function calls in sequence
+        function_responses = [self.call_function(tool_call) for tool_call in tool_calls]
 
         # Extend conversation with all function responses
         responses_in_str = [{**item, "content": str(item["content"])} for item in function_responses]
@@ -79,5 +78,5 @@ class ChatBot:
 
         self.messages.extend(responses_in_str)
 
-        response_message = await self.execute()
+        response_message = self.execute()
         return response_message, function_responses
