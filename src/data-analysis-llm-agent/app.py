@@ -52,41 +52,39 @@ def on_chat_start():
 
 
 @cl.on_message
-def on_message(message: cl.Message):
+async def on_message(message: cl.Message):
     bot = cl.user_session.get("bot")
 
-    # Create a new message for the bot's response
-    msg = cl.Message(author="Assistant", content="")
-    msg.send()  # Synchronously send the initial message
-
-    # Step 1: Get the user request and the first response from the bot
+    # Get the user request and the first response from the bot
     response_message = bot(message.content)
-    msg.content = response_message.content or ""
 
-    # Instead of updating, we just send the updated content directly
-    if len(msg.content) > 0:
-        cl.Message(author="Assistant", content=msg.content).send()
+    # Create a new message for the bot's response
+    if response_message.content:
+        await cl.Message(author="Assistant", content=response_message.content).send()
 
     # Step 2: Check tool_calls and handle them iteratively until MAX_ITER is reached
     cur_iter = 0
     tool_calls = response_message.tool_calls
-    while cur_iter <= MAX_ITER:
+    while cur_iter < MAX_ITER:  # Change to < for proper iteration limit
         if tool_calls:
             bot.messages.append(response_message)
             response_message, function_responses = bot.call_functions(tool_calls)
 
-            if response_message.content and len(response_message.content) > 0:
+            if response_message.content:
                 # Send the updated response content as a new message
-                cl.Message(author="Assistant", content=response_message.content).send()
+                await cl.Message(author="Assistant", content=response_message.content).send()
 
             tool_calls = response_message.tool_calls
 
-            # Display plotly chart if function response contains a plot
-            function_responses_to_display = [res for res in function_responses if res['name'] in bot.exclude_functions]
+            # Display Plotly chart if function response contains a plot
+            function_responses_to_display = [
+                res for res in function_responses if res['name'] in bot.exclude_functions
+            ]
             for function_res in function_responses_to_display:
                 if isinstance(function_res["content"], Figure):
                     chart = cl.Plotly(name="chart", figure=function_res['content'], display="inline")
-                    cl.Message(author="Assistant", content="", elements=[chart]).send()
+                    await cl.Message(author="Assistant", content="", elements=[chart]).send()
         else:
             break
         cur_iter += 1
+
