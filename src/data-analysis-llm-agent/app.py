@@ -55,18 +55,19 @@ def on_chat_start():
 def on_message(message: cl.Message):
     bot = cl.user_session.get("bot")
 
+    # Create a new message for the bot's response
     msg = cl.Message(author="Assistant", content="")
-    msg.send()
+    msg.send()  # Synchronously send the initial message
 
-    # step 1: user request and first response from the bot
+    # Step 1: Get the user request and the first response from the bot
     response_message = bot(message.content)
     msg.content = response_message.content or ""
-    
-    # pending message to be sent
-    if len(msg.content) > 0:
-        msg.update()
 
-    # step 2: check tool_calls - as long as there are tool calls and it doesn't cross MAX_ITER count, call iteratively
+    # Instead of updating, we just send the updated content directly
+    if len(msg.content) > 0:
+        cl.Message(author="Assistant", content=msg.content).send()
+
+    # Step 2: Check tool_calls and handle them iteratively until MAX_ITER is reached
     cur_iter = 0
     tool_calls = response_message.tool_calls
     while cur_iter <= MAX_ITER:
@@ -75,9 +76,12 @@ def on_message(message: cl.Message):
             response_message, function_responses = bot.call_functions(tool_calls)
 
             if response_message.content and len(response_message.content) > 0:
+                # Send the updated response content as a new message
                 cl.Message(author="Assistant", content=response_message.content).send()
 
             tool_calls = response_message.tool_calls
+
+            # Display plotly chart if function response contains a plot
             function_responses_to_display = [res for res in function_responses if res['name'] in bot.exclude_functions]
             for function_res in function_responses_to_display:
                 if isinstance(function_res["content"], Figure):
