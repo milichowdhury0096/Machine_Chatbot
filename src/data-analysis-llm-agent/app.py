@@ -56,6 +56,10 @@ async def on_chat_start():
     - Pay careful attention to the schema and table details I have provided below. Only use columns and tables mentioned in the schema details.
     - don't provide any newly generated data while sql querying. data output from sql should match from the table. then tell no such data available.
     - while generating chart limit data to 500 rows only.
+    - intelligently understand if output is to be given in table or not.
+    - if query given to make graph it means chart. understand intelligently what user means by graph
+    - if chart or graph type is not mentioned by user intelligently understand what type of graph will be best for user
+    - if any axes are missing for user specefied graph ask for the axes
 
     Here are complete schema details with column details:
     {table_info}"""
