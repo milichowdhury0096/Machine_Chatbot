@@ -1,7 +1,4 @@
-chainlit==1.2.3
-openai==4.5.6
+chainlit==1.2.0
+openai==1.46.0
 httpx==0.23.0
-logging==0.9.1
-os==0.1.1
-json==2.0.9
-asyncio==0.10.0
+os
