@@ -1,60 +1,72 @@
 import chainlit as cl
 from dotenv import load_dotenv
 import logging
-from plotly.graph_objs import Figure
-from utils import generate_sqlite_table_info_query, format_table_info
-from tools import tools_schema, sync_run_sqlite_query, plot_chart  # Use the synchronous version
-from bot import ChatBot
 
 # Load environment variables from .env file
 load_dotenv("../.env")
+from plotly.graph_objs import Figure
+
+from utils import generate_sqlite_table_info_query, format_table_info
+from tools import tools_schema, run_sqlite_query, plot_chart
+from bot import ChatBot
 
 # Configure logging
 logging.basicConfig(filename='chatbot.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 logger = logging.getLogger()
 logger.addHandler(logging.FileHandler('chatbot.log'))
 
 MAX_ITER = 5
 schema_table_pairs = []
 
-tool_run_sqlite_query = sync_run_sqlite_query  # Ensure this is a synchronous function
-tool_plot_chart = plot_chart
+tool_run_sqlite_query = cl.step(type="tool", show_input="json", language="str")(run_sqlite_query)
+tool_plot_chart = cl.step(type="tool", show_input="json", language="json")(plot_chart)
+original_run_sqlite_query = tool_run_sqlite_query.__wrapped__
+# cl.instrument_openai() 
+# for automatic steps
 
 @cl.on_chat_start
 def on_chat_start():
+    # build schema query
     table_info_query = generate_sqlite_table_info_query(schema_table_pairs)
-    result, column_names = tool_run_sqlite_query(table_info_query, markdown=False)
+
+    # execute query
+    result, column_names = original_run_sqlite_query(table_info_query, markdown=False)
+
+    # format result into string to be used in prompt
     table_info = '\n'.join([item[0] for item in result])
 
-    system_message = f"""You are an expert in data analysis... (rest of your system message)."""
+    system_message = f"""You are an expert in data analysis. You will provide valuable insights for business user based on their request...
+    
+    (Other details stay the same)
+
+    Here are complete schema details with column details:
+    {table_info}"""
 
     tool_functions = {
         "query_db": tool_run_sqlite_query,
         "plot_chart": tool_plot_chart
     }
 
-    bot = ChatBot(system_message, tools_schema, tool_functions)
-    cl.user_session.set("bot", bot)
+    cl.user_session.set("bot", ChatBot(system_message, tools_schema, tool_functions))
+
 
 @cl.on_message
 def on_message(message: cl.Message):
     bot = cl.user_session.get("bot")
 
-    if bot is None:
-        logging.error("Bot not initialized.")
-        return
-
     msg = cl.Message(author="Assistant", content="")
-    msg.send()  # No await needed since it's synchronous
+    msg.send()
 
-    # Step 1: Handle user request and bot response
+    # step 1: user request and first response from the bot
     response_message = bot(message.content)
     msg.content = response_message.content or ""
-
+    
+    # pending message to be sent
     if len(msg.content) > 0:
         msg.update()
 
-    # Step 2: Check tool_calls and iterate
+    # step 2: check tool_calls - as long as there are tool calls and it doesn't cross MAX_ITER count, call iteratively
     cur_iter = 0
     tool_calls = response_message.tool_calls
     while cur_iter <= MAX_ITER:
@@ -66,7 +78,6 @@ def on_message(message: cl.Message):
                 cl.Message(author="Assistant", content=response_message.content).send()
 
             tool_calls = response_message.tool_calls
-
             function_responses_to_display = [res for res in function_responses if res['name'] in bot.exclude_functions]
             for function_res in function_responses_to_display:
                 if isinstance(function_res["content"], Figure):
