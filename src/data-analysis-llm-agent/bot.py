@@ -7,6 +7,8 @@ from langchain_groq import ChatGroq
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 
+api_key = os.environ.get("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")
+
 # Initialize the ChatGroq client
 client = ChatGroq(
     model="llama3-groq-70b-8192-tool-use-preview",
