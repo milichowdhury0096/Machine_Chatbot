@@ -1,12 +1,13 @@
 import logging
 import os
 import json
-import openai  # Assuming you'll replace it with ChatGroq for inference later
+
+from openai import OpenAI
 
 logging.info(f"User message")
 
 model = "gpt-3.5-turbo-1106"
-client = openai  # or ChatGroq if applicable
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 # Main chatbot class
 class ChatBot:
@@ -31,7 +32,7 @@ class ChatBot:
         return response_message
 
     def execute(self):
-        completion = client.ChatCompletion.create(
+        completion = client.chat.completions.create(
             model=model,
             messages=self.messages,
             tools=self.tools
@@ -45,7 +46,6 @@ class ChatBot:
         function_args = json.loads(tool_call.function.arguments)
         logging.info(f"Calling {function_name} with {function_args}")
         function_response = function_to_call(**function_args)
-
         return {
             "tool_call_id": tool_call.id,
             "role": "tool",
@@ -54,15 +54,10 @@ class ChatBot:
         }
 
     def call_functions(self, tool_calls):
-        function_responses = [
-            self.call_function(tool_call) for tool_call in tool_calls
-        ]
-
+        function_responses = [self.call_function(tool_call) for tool_call in tool_calls]
         responses_in_str = [{**item, "content": str(item["content"])} for item in function_responses]
-
         for res in function_responses:
             logging.info(f"Tool Call: {res}")
-
         self.messages.extend(responses_in_str)
         response_message = self.execute()
         return response_message, function_responses
