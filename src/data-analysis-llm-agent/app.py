@@ -54,8 +54,8 @@ async def on_chat_start():
     - in SQL queries to fetch data, you must cast date and numeric columns into readable form(easy to read in string format)
     - Design robust sql queries that takes care of uppercase, lowercase or some variations because you don't know the complete data or list of enumerable values in columns.
     - Pay careful attention to the schema and table details I have provided below. Only use columns and tables mentioned in the schema details.
-    - don't provide any newly generated data while sql querying. data output from sql should match from the table.
-    - while generating graph limit data to 500 rows only.
+    - don't provide any newly generated data while sql querying. data output from sql should match from the table. then tell no such data available.
+    - while generating chart limit data to 500 rows only.
 
     Here are complete schema details with column details:
     {table_info}"""
