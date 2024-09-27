@@ -36,7 +36,8 @@ class ChatBot:
             self.messages.append({"role": "assistant", "content": response_message['content']})
 
         logging.info(f"User message: {message}")
-        logging.info(f"Assistant response: {response_message['content']}")
+        logging.info(f"Assistant response: {response_message.content}")  # Use .content attribute directly
+
 
         return response_message
 
@@ -46,7 +47,7 @@ class ChatBot:
         
         # Use the ChatGroq client to get the response
         completion = client.invoke(filtered_messages)
-        assistant_message = completion['content']  # Adjust based on the output structure of ChatGroq
+        assistant_message = completion  # Adjust based on the output structure of ChatGroq
         return {"content": assistant_message}
 
     def call_function(self, tool_call):
