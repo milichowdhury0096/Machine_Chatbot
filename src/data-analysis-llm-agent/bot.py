@@ -10,6 +10,7 @@ logging.basicConfig(level=logging.INFO)
 # Initialize the ChatGroq client
 client = ChatGroq(
     model="llama3-groq-70b-8192-tool-use-preview",
+    api_key=api_key,
     temperature=0,
     max_tokens=None,
     timeout=None,
