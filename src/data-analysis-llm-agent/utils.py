@@ -8,7 +8,7 @@ def run_db_query(sql_query):
     connection = None
     try:
         # Establish the connection
-        connection = sqlite3.connect('../data/movies.db')
+        connection = sqlite3.connect('../data/ai4i2020.db')
 
         # Create a cursor object
         cursor = connection.cursor()
