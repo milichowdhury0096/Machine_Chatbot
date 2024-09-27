@@ -2,12 +2,19 @@ import logging
 import os
 import json
 
-from openai import OpenAI
+from langchain_groq import ChatGroq
 
-logging.info(f"User message")
+# Set up logging
+logging.basicConfig(level=logging.INFO)
 
-model = "gpt-3.5-turbo-1106"
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+# Initialize the ChatGroq client
+client = ChatGroq(
+    model="llama3-groq-70b-8192-tool-use-preview",
+    temperature=0,
+    max_tokens=None,
+    timeout=None,
+    max_retries=2,
+)
 
 # Main chatbot class
 class ChatBot:
@@ -21,24 +28,21 @@ class ChatBot:
             self.messages.append({"role": "system", "content": system})
 
     def __call__(self, message):
-        self.messages.append({"role": "user", "content": f"""{message}"""})
+        self.messages.append({"role": "user", "content": f"{message}"})
         response_message = self.execute()
-        if response_message.content:
-            self.messages.append({"role": "assistant", "content": response_message.content})
+        if response_message['content']:
+            self.messages.append({"role": "assistant", "content": response_message['content']})
 
         logging.info(f"User message: {message}")
-        logging.info(f"Assistant response: {response_message.content}")
+        logging.info(f"Assistant response: {response_message['content']}")
 
         return response_message
 
     def execute(self):
-        completion = client.chat.completions.create(
-            model=model,
-            messages=self.messages,
-            tools=self.tools
-        )
-        assistant_message = completion.choices[0].message
-        return assistant_message
+        # Use the ChatGroq client to get the response
+        completion = client(self.messages)
+        assistant_message = completion['content']  # Adjust based on the output structure of ChatGroq
+        return {"content": assistant_message}
 
     def call_function(self, tool_call):
         function_name = tool_call.function.name
