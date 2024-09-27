@@ -1,15 +1,15 @@
 import logging
 import os
 import json
-
 from langchain_groq import ChatGroq
+import chainlit as cl  # Import Chainlit for callback handling
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 
 # Log initial message
 logging.info("Initializing chatbot...")
-
+CHATGROQ_API_KEY= "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"
 # Define the model and API key
 model = "llama3-groq-70b-8192-tool-use-preview"
 api_key = os.environ.get("CHATGROQ_API_KEY")  # Assuming the API key is stored in an environment variable
@@ -38,11 +38,11 @@ class ChatBot:
     def __call__(self, message):
         self.messages.append({"role": "user", "content": f"{message}"})
         response_message = self.execute()
-        if response_message.content:
-            self.messages.append({"role": "assistant", "content": response_message.content})
+        if response_message:
+            self.messages.append({"role": "assistant", "content": response_message})
 
         logging.info(f"User message: {message}")
-        logging.info(f"Assistant response: {response_message.content}")
+        logging.info(f"Assistant response: {response_message}")
 
         return response_message
 
@@ -50,29 +50,6 @@ class ChatBot:
         completion = client.invoke(self.messages)  # Use the ChatGroq client to get the response
         assistant_message = completion.content  # Access the content of the AIMessage directly
         return assistant_message
-        
-    def call_function(self, tool_call):
-        function_name = tool_call.function.name
-        function_to_call = self.tool_functions[function_name]
-        function_args = json.loads(tool_call.function.arguments)
-        logging.info(f"Calling {function_name} with {function_args}")
-        function_response = function_to_call(**function_args)
-        return {
-            "tool_call_id": tool_call.id,
-            "role": "tool",
-            "name": function_name,
-            "content": function_response,
-        }
-
-    def call_functions(self, tool_calls):
-        function_responses = [self.call_function(tool_call) for tool_call in tool_calls]
-        responses_in_str = [{**item, "content": str(item["content"])} for item in function_responses]
-        for res in function_responses:
-            logging.info(f"Tool Call: {res}")
-        self.messages.extend(responses_in_str)
-        response_message = self.execute()
-        return response_message, function_responses
-
 
 # Define the callback for handling chat messages
 @cl.on_message
@@ -85,3 +62,9 @@ def handle_message(message):
 @cl.on_chat_start
 def on_chat_start():
     cl.send_message("Welcome to the chatbot! How can I assist you today?")
+
+# Example usage (you can remove this section if you don't need it in your code)
+if __name__ == "__main__":
+    bot = ChatBot(system="You are a helpful assistant.", tools=[], tool_functions={})
+    response = bot("What is the weather today?")
+    print(response)
