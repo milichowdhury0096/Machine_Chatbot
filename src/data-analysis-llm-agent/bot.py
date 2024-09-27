@@ -2,6 +2,7 @@ import logging
 import os
 import json
 from langchain_groq import ChatGroq
+import asyncio
 
 logging.info(f"User message")
 
@@ -13,6 +14,14 @@ client = ChatGroq(
     timeout=None,
     max_retries=2,
 )
+
+# Function to call the ChatGroq client in a separate thread
+async def chat_with_groq(user_message):
+    loop = asyncio.get_event_loop()
+    response = await loop.run_in_executor(None, lambda: client.chat.completions.create(
+        messages=[{"role": "user", "content": user_message}]
+    ))
+    return response.choices[0].message.content
 
 # Main chatbot class
 class ChatBot:
