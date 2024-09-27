@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import logging
 from plotly.graph_objs import Figure
 from utils import generate_sqlite_table_info_query, format_table_info
-from tools import tools_schema, run_sqlite_query, plot_chart
+from tools import tools_schema, sync_run_sqlite_query, plot_chart  # Use the synchronous version
 from bot import ChatBot
 
 # Load environment variables from .env file
@@ -17,7 +17,7 @@ logger.addHandler(logging.FileHandler('chatbot.log'))
 MAX_ITER = 5
 schema_table_pairs = []
 
-tool_run_sqlite_query = run_sqlite_query
+tool_run_sqlite_query = sync_run_sqlite_query  # Ensure this is a synchronous function
 tool_plot_chart = plot_chart
 
 @cl.on_chat_start
@@ -26,21 +26,26 @@ def on_chat_start():
     result, column_names = tool_run_sqlite_query(table_info_query, markdown=False)
     table_info = '\n'.join([item[0] for item in result])
 
-    system_message = f"""You are an expert in data analysis. You will provide valuable insights for business users based on their requests. Before responding, ensure the request pertains to data analysis on the provided schema, else decline... (rest of the system message remains the same)."""
+    system_message = f"""You are an expert in data analysis... (rest of your system message)."""
 
     tool_functions = {
         "query_db": tool_run_sqlite_query,
         "plot_chart": tool_plot_chart
     }
 
-    cl.user_session.set("bot", ChatBot(system_message, tools_schema, tool_functions))
+    bot = ChatBot(system_message, tools_schema, tool_functions)
+    cl.user_session.set("bot", bot)
 
 @cl.on_message
 def on_message(message: cl.Message):
     bot = cl.user_session.get("bot")
 
+    if bot is None:
+        logging.error("Bot not initialized.")
+        return
+
     msg = cl.Message(author="Assistant", content="")
-    msg.send()
+    msg.send()  # No await needed since it's synchronous
 
     # Step 1: Handle user request and bot response
     response_message = bot(message.content)
