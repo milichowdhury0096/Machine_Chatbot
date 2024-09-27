@@ -1,90 +1,68 @@
-import chainlit as cl
-from dotenv import load_dotenv
 import logging
+import os
+import json
 
-# Load environment variables from .env file
-load_dotenv("../.env")
-from plotly.graph_objs import Figure
+from langchain_groq import ChatGroq
 
-from utils import generate_sqlite_table_info_query, format_table_info
-from tools import tools_schema, run_sqlite_query, plot_chart
-from bot import ChatBot
+# Set up logging
+logging.basicConfig(level=logging.INFO)
 
-# Configure logging
-logging.basicConfig(filename='chatbot.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Initialize the ChatGroq client
+model = "llama3-groq-70b-8192-tool-use-preview"
+client = ChatGroq(
+    model=model,
+    temperature=0,
+    max_tokens=None,
+    timeout=None,
+    max_retries=2,
+)
 
-logger = logging.getLogger()
-logger.addHandler(logging.FileHandler('chatbot.log'))
+# Main chatbot class
+class ChatBot:
+    def __init__(self, system, tools, tool_functions):
+        self.system = system
+        self.tools = tools
+        self.exclude_functions = ["plot_chart"]
+        self.tool_functions = tool_functions
+        self.messages = []
+        if self.system:
+            self.messages.append({"role": "system", "content": system})
 
-MAX_ITER = 5
-schema_table_pairs = []
+    def __call__(self, message):
+        self.messages.append({"role": "user", "content": message})
+        response_message = self.execute()
+        if response_message:
+            self.messages.append({"role": "assistant", "content": response_message})
 
-tool_run_sqlite_query = cl.step(type="tool", show_input="json", language="str")(run_sqlite_query)
-tool_plot_chart = cl.step(type="tool", show_input="json", language="json")(plot_chart)
-original_run_sqlite_query = tool_run_sqlite_query.__wrapped__
-# cl.instrument_openai() 
-# for automatic steps
+        logging.info(f"User message: {message}")
+        logging.info(f"Assistant response: {response_message}")
 
-@cl.on_chat_start
-def on_chat_start():
-    # build schema query
-    table_info_query = generate_sqlite_table_info_query(schema_table_pairs)
+        return response_message
 
-    # execute query
-    result, column_names = original_run_sqlite_query(table_info_query, markdown=False)
+    def execute(self):
+        # Use the ChatGroq client to get the response
+        completion = client.invoke(self.messages)
+        assistant_message = completion.content  # Access the content of the AIMessage directly
+        return assistant_message
 
-    # format result into string to be used in prompt
-    table_info = '\n'.join([item[0] for item in result])
+    def call_function(self, tool_call):
+        function_name = tool_call.function.name
+        function_to_call = self.tool_functions[function_name]
+        function_args = json.loads(tool_call.function.arguments)
+        logging.info(f"Calling {function_name} with {function_args}")
+        function_response = function_to_call(**function_args)
+        return {
+            "tool_call_id": tool_call.id,
+            "role": "tool",
+            "name": function_name,
+            "content": function_response,
+        }
 
-    system_message = f"""You are an expert in data analysis. You will provide valuable insights for business user based on their request...
-    
-    (Other details stay the same)
-
-    Here are complete schema details with column details:
-    {table_info}"""
-
-    tool_functions = {
-        "query_db": tool_run_sqlite_query,
-        "plot_chart": tool_plot_chart
-    }
-
-    cl.user_session.set("bot", ChatBot(system_message, tools_schema, tool_functions))
-
-
-@cl.on_message
-async def on_message(message: cl.Message):
-    bot = cl.user_session.get("bot")
-
-    # Get the user request and the first response from the bot
-    response_message = bot(message.content)
-
-    # Create a new message for the bot's response
-    if response_message.content:
-        await cl.Message(author="Assistant", content=response_message.content).send()
-
-    # Step 2: Check tool_calls and handle them iteratively until MAX_ITER is reached
-    cur_iter = 0
-    tool_calls = response_message.tool_calls
-    while cur_iter < MAX_ITER:  # Change to < for proper iteration limit
-        if tool_calls:
-            bot.messages.append(response_message)
-            response_message, function_responses = bot.call_functions(tool_calls)
-
-            if response_message.content:
-                # Send the updated response content as a new message
-                await cl.Message(author="Assistant", content=response_message.content).send()
-
-            tool_calls = response_message.tool_calls
-
-            # Display Plotly chart if function response contains a plot
-            function_responses_to_display = [
-                res for res in function_responses if res['name'] in bot.exclude_functions
-            ]
-            for function_res in function_responses_to_display:
-                if isinstance(function_res["content"], Figure):
-                    chart = cl.Plotly(name="chart", figure=function_res['content'], display="inline")
-                    await cl.Message(author="Assistant", content="", elements=[chart]).send()
-        else:
-            break
-        cur_iter += 1
-
+    def call_functions(self, tool_calls):
+        function_responses = [self.call_function(tool_call) for tool_call in tool_calls]
+        responses_in_str = [{**item, "content": str(item["content"])} for item in function_responses]
+        for res in function_responses:
+            logging.info(f"Tool Call: {res}")
+        self.messages.extend(responses_in_str)
+        response_message = self.execute()
+        return response_message, function_responses
