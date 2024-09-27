@@ -14,7 +14,7 @@ os.environ["GROQ_API_KEY"] = "gsk_5RZSmDsdmy6DoXOqbIu5WGdyb3FYmQ8VbkoIlaXChPPBxz
 
 
 
-model = "llama3-8b-8192"
+model = "llama3-groq-70b-8192-tool-use-preview"
 client = AsyncGroq(
     api_key=os.environ.get("Groq_API_KEY")
 )
