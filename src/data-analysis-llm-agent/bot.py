@@ -5,13 +5,13 @@ import json
 
 
 import httpx
-from openai import AsyncOpenAI
+from groq import AsyncGroq
 
 logging.info(f"User message")
 
-model = "gpt-3.5-turbo-1106"
-client = AsyncOpenAI(
-    api_key=os.environ.get("OPENAI_API_KEY")
+model = "llama3-8b-8192"
+client = AsyncGroq(
+    api_key=os.environ.get("Groq_API_KEY")
 )
 
 # Main chatbot class
