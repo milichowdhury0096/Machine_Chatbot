@@ -65,4 +65,8 @@ def on_message(message: cl.Message):
             function_responses_to_display = [res for res in function_responses if res['name'] in bot.exclude_functions]
             for function_res in function_responses_to_display:
                 if isinstance(function_res["content"], Figure):
-                   
+                    chart = cl.Plotly(name="chart", figure=function_res['content'], display="inline")
+                    cl.Message(author="Assistant", content="", elements=[chart]).send()
+        else:
+            break
+        cur_iter += 1
