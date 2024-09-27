@@ -1,4 +1,3 @@
 chainlit==1.2.0
-openai==1.46.0
+langchain-groq
 httpx==0.23.0
-os
