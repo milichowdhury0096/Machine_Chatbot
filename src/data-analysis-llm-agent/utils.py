@@ -1,14 +1,14 @@
-import sqlite3 
+import sqlite3
 
 EXTRA_SCHEMA_INFO = """
 """
 
-
-async def run_db_query(sql_query):
+# Synchronous version of running a database query
+def run_db_query(sql_query):
     connection = None
     try:
         # Establish the connection
-        connection = sqlite3.connect('../data/ai4i2020.db')
+        connection = sqlite3.connect('../data/movies.db')
 
         # Create a cursor object
         cursor = connection.cursor()
@@ -34,6 +34,7 @@ async def run_db_query(sql_query):
             print("SQLite connection is closed")
 
 
+# Function to generate PostgreSQL table information 
 def generate_postgres_table_info_query(schema_table_pairs):
     query = """
     SELECT
@@ -49,21 +50,23 @@ def generate_postgres_table_info_query(schema_table_pairs):
     LEFT JOIN
         pg_description com ON com.objoid = cl.oid AND com.objsubid = cols.ordinal_position
     WHERE
-        (cols.table_schema, cols.table_name) IN ({});
+        (cols.table_schema, cols.table_name) IN ({}); 
     """.format(', '.join(["('{}', '{}')".format(schema, table) for schema, table in schema_table_pairs]))
 
     return query
 
+# Function to generate SQLite table information query
 def generate_sqlite_table_info_query(schema_table_pairs):
- sql_query = """SELECT 
+    sql_query = """SELECT 
     sql
     FROM 
     sqlite_master m 
     WHERE 
     m.type='table' AND m.name NOT LIKE 'sqlite_%';"""
 
- return sql_query
+    return sql_query
 
+# Format table information results
 def format_table_info(results, columns):
     table_info = ""
     current_table = None
@@ -91,6 +94,7 @@ def format_table_info(results, columns):
 
     return table_info
 
+# Format sample data for display
 def format_sample_data(column_names, data_records):
     formatted_data = ""
     for col_name in column_names:
@@ -105,14 +109,14 @@ def format_sample_data(column_names, data_records):
 
     return formatted_data
 
+# Generate query for sample data
 def generate_sample_data_query(schema, table, N):
     return f"""SELECT * FROM "{schema}"."{table}" ORDER BY RANDOM() LIMIT {N};"""
 
 
-# formatting data
+# Convert rows to JSON format (version 1)
 def convert_to_json1(rows, column_names):
     results = []
-
     for row in rows:
         # Convert row data into a dictionary with column names as keys
         row_dict = dict(zip(column_names, row))
@@ -123,19 +127,19 @@ def convert_to_json1(rows, column_names):
     return json_data
 
 
-
-# formatting data
+# Convert rows to JSON format (version 2)
 def convert_to_json(rows, column_names):
     results = []
     for row in rows:
         row_dict = dict(zip(column_names, row))
         results.append(row_dict)
 
-        # Serialize the results and column names into a JSON string
-    json_data ={"columns": column_names, "data": results}
+    # Serialize the results and column names into a JSON string
+    json_data = {"columns": column_names, "data": results}
     return json_data
 
 
+# Convert JSON data to Markdown table
 def json_to_markdown_table(json_data):
     # Extract columns and data from JSON
     columns = json_data["columns"]
