@@ -118,7 +118,7 @@ def run_sqlite_query(sql_query, markdown=True):
     connection = None
     try:
         # Establish the connection
-        db_path = os.path.join(os.path.dirname(__file__), '../data/movies.db')
+        db_path = os.path.join(os.path.dirname(__file__), '../data/ai4i2020.db')
         print(db_path)
         connection = sqlite3.connect(db_path)
 
