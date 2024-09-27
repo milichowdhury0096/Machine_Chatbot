@@ -72,3 +72,16 @@ class ChatBot:
         self.messages.extend(responses_in_str)
         response_message = self.execute()
         return response_message, function_responses
+
+
+# Define the callback for handling chat messages
+@cl.on_message
+def handle_message(message):
+    bot = ChatBot(system="You are a helpful assistant.", tools=[], tool_functions={})
+    response = bot(message.content)
+    cl.send_message(response)
+
+# Optional: Define a callback for chat start if needed
+@cl.on_chat_start
+def on_chat_start():
+    cl.send_message("Welcome to the chatbot! How can I assist you today?")
