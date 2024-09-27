@@ -8,7 +8,7 @@ import asyncio
 logging.basicConfig(level=logging.INFO)
 
 # Initialize the asynchronous ChatGroq client
-model = "your-chatgroq-model"  # Replace with your actual ChatGroq model
+model = "llama3-groq-70b-8192-tool-use-preview"  
 client = ChatGroq(
     model=model,
     temperature=0,
