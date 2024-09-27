@@ -7,12 +7,11 @@ from langchain_groq import ChatGroq
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 
-api_key = os.environ.get("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")
-
-# Initialize the ChatGroq client
+# Initialize the ChatGroq client with API key
+api_key = os.environ.get("CHATGROQ_API_KEY")  # Ensure the API key is correctly set
 client = ChatGroq(
     model="llama3-groq-70b-8192-tool-use-preview",
-    api_key=api_key,
+    api_key=api_key,  # Include the API key here
     temperature=0,
     max_tokens=None,
     timeout=None,
@@ -31,7 +30,7 @@ class ChatBot:
             self.messages.append({"role": "system", "content": system})
 
     def __call__(self, message):
-        self.messages.append({"role": "user", "content": f"{message}"})
+        self.messages.append({"role": "user", "content": message})
         response_message = self.execute()
         if response_message['content']:
             self.messages.append({"role": "assistant", "content": response_message['content']})
@@ -42,8 +41,11 @@ class ChatBot:
         return response_message
 
     def execute(self):
+        # Filter out unsupported message types (like 'system')
+        filtered_messages = [msg for msg in self.messages if msg['role'] in ['user', 'assistant']]
+        
         # Use the ChatGroq client to get the response
-        completion = client(self.messages)
+        completion = client.invoke(filtered_messages)
         assistant_message = completion['content']  # Adjust based on the output structure of ChatGroq
         return {"content": assistant_message}
 
