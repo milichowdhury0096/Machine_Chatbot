@@ -56,7 +56,6 @@ async def on_chat_start():
     - Pay careful attention to the schema and table details I have provided below. Only use columns and tables mentioned in the schema details
     - dont return data that is not in the table Machinelogs if asked to fetch data. 
     - machine failure 1 is machine failure and 0 means it is okay.
-    - intelligently decide if user wants output in table or not.
     - TWF is tool wear failure.
     - HDF is heat dissipation failure.
     - PWF is power failure.
