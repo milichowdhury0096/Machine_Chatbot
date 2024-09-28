@@ -18,7 +18,7 @@ tools_schema = [
                 "properties": {
                     "sql_query": {
                         "type": "string",
-                        "description": "complete and correct sql query to fulfil user request.",
+                        "description": "Complete and correct SQL query to fulfill user request.",
                     }
                 },
                 "required": ["sql_query"],
@@ -29,46 +29,57 @@ tools_schema = [
         "type": "function",
         "function": {
             "name": "plot_chart",
-            "description": "Plot Bar or Linechart to visualize the result of sql query",
+            "description": "Plot Bar or Line chart to visualize the result of SQL query. Supports multi-series for bar and line charts.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "plot_type": {
                         "type": "string",
-                        "description": "which plot type either bar or line or scatter",
+                        "description": "Plot type: bar, line, scatter, stacked_bar, clustered_bar, etc.",
                     },
                     "x_values": {
                         "type": "array",
-                        "description": "list of x values for plotting",
+                        "description": "List of x values for plotting.",
                         "items": {
                             "type": "string"
                         }
                     },
-                    "y_values": {
+                    "y_values_list": {
                         "type": "array",
-                        "description": "list of y axis values for plotting",
+                        "description": "List of arrays, where each array is a set of y-axis values for plotting.",
                         "items": {
-                            "type": "number"
+                            "type": "array",
+                            "items": {
+                                "type": "number"
+                            }
+                        }
+                    },
+                    "y_labels": {
+                        "type": "array",
+                        "description": "List of labels for each y-axis series.",
+                        "items": {
+                            "type": "string"
                         }
                     },
                     "plot_title": {
                         "type": "string",
-                        "description": "Descriptive Title for the plot",
+                        "description": "Descriptive title for the plot.",
                     },
                     "x_label": {
                         "type": "string",
-                        "description": "Label for the x axis",
+                        "description": "Label for the x-axis.",
                     },
                     "y_label": {
                         "type": "string",
-                        "description": "label for the y axis",
+                        "description": "Label for the y-axis.",
                     }
                 },
-                "required": ["plot_type","x_values","y_values","plot_title","x_label","y_label"],
+                "required": ["plot_type", "x_values", "y_values_list", "plot_title", "x_label", "y_label"],
             },
         }
     }
 ]
+
 
 
 async def run_postgres_query(sql_query, markdown=True):
@@ -156,31 +167,53 @@ async def run_sqlite_query(sql_query, markdown=True):
             connection.close()
             print("SQLite connection is closed")
 
-async def plot_chart(x_values, y_values, plot_title, x_label, y_label, plot_type='line', save_path="tmp/tmp.png"):
+async def plot_chart(x_values, y_values_list, plot_title, x_label, y_labels, y_label="Y-Axis", plot_type='line', save_path="tmp/tmp.png"):
     """
     Generate a bar chart, line chart, or scatter plot based on input data using Plotly.
+    Supports multi-series charts like stacked bar, clustered bar, etc.
 
     Parameters:
     x_values (array-like): Input values for the x-axis.
-    y_values (array-like): Input values for the y-axis.
-    plot_type (str, optional): Type of plot to generate ('bar', 'line', or 'scatter'). Default is 'line'.
+    y_values_list (array-like): List of arrays, where each array is a Y-axis series for the plot.
+    plot_type (str, optional): Type of plot to generate ('bar', 'line', 'scatter', 'stacked_bar', 'clustered_bar', etc.). Default is 'line'.
+    y_labels (array-like): List of labels for each Y-axis series.
+    y_label (str, optional): General label for the Y-axis.
     save_path (str, optional): Path to save the plot image locally. If None, the plot image will not be saved locally.
 
     Returns:
     str: Data URI of the plot image.
     """
     # Validate input lengths
-    if len(x_values) != len(y_values):
-        raise ValueError("Lengths of x_values and y_values must be the same.")
+    for y_values in y_values_list:
+        if len(x_values) != len(y_values):
+            raise ValueError("Lengths of x_values and each y_values must be the same.")
 
-    # Define plotly trace based on plot_type
-    # Define plotly trace based on plot_type
-    if plot_type == 'bar':
-        trace = go.Bar(x=x_values, y=y_values, marker=dict(color='#24C8BF', line=dict(width=1)))
-    elif plot_type == 'scatter':
-        trace = go.Scatter(x=x_values, y=y_values, mode='markers', marker=dict(color='#df84ff', size=10, opacity=0.7, line=dict(width=1)))
-    elif plot_type == 'line':
-        trace = go.Scatter(x=x_values, y=y_values, mode='lines+markers', marker=dict(color='#ff9900', size=8, line=dict(width=1)), line=dict(width=2, color='#ff9900'))
+    traces = []
+
+    # Generate traces for each Y-series based on plot_type
+    for i, y_values in enumerate(y_values_list):
+        if plot_type == 'stacked_bar':
+            trace = go.Bar(x=x_values, y=y_values, name=y_labels[i], marker=dict(line=dict(width=1)))
+        elif plot_type == 'clustered_bar':
+            trace = go.Bar(x=x_values, y=y_values, name=y_labels[i], marker=dict(line=dict(width=1)))
+        elif plot_type == 'line':
+            trace = go.Scatter(x=x_values, y=y_values, mode='lines+markers', name=y_labels[i],
+                               marker=dict(size=8, line=dict(width=1)), line=dict(width=2))
+        elif plot_type == 'scatter':
+            trace = go.Scatter(x=x_values, y=y_values, mode='markers', name=y_labels[i], 
+                               marker=dict(size=10, opacity=0.7, line=dict(width=1)))
+        elif plot_type == 'pie':
+            trace = go.Pie(labels=x_values, values=y_values, name=y_labels[i])
+        # Add more types like stacked_area, etc., if needed
+        traces.append(trace)
+
+    # Layout settings for stacked and clustered bars
+    if plot_type == 'stacked_bar':
+        barmode = 'stack'
+    elif plot_type == 'clustered_bar':
+        barmode = 'group'
+    else:
+        barmode = None
 
     # Create layout for the plot
     layout = go.Layout(
@@ -190,10 +223,11 @@ async def plot_chart(x_values, y_values, plot_title, x_label, y_label, plot_type
         yaxis=dict(title=y_label, titlefont=dict(size=18), tickfont=dict(size=14), gridcolor='#f0f0f0'),
         margin=dict(l=60, r=60, t=80, b=60),
         plot_bgcolor='#f8f8f8',
-        paper_bgcolor='#f8f8f8'
+        paper_bgcolor='#f8f8f8',
+        barmode=barmode  # This controls stacking or grouping for bar charts
     )
 
-    # Create figure and add trace to it
-    fig = go.Figure(data=[trace], layout=layout)
+    # Create figure and add traces to it
+    fig = go.Figure(data=traces, layout=layout)
 
     return fig
