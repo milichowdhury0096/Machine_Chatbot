@@ -26,7 +26,9 @@ original_run_sqlite_query = tool_run_sqlite_query.__wrapped__
 
 @cl.on_chat_start
 async def on_chat_start():
-    # build schema query
+    await cl.Message(content="Hi, I’m DataQube, your intelligent AI assistant. I can help you query data and generate insightful charts. How can I assist you today?").send()
+	
+	# build schema query
     table_info_query = generate_sqlite_table_info_query(schema_table_pairs)
 
     # execute query
@@ -41,8 +43,7 @@ async def on_chat_start():
     If user request some data, you will build sql query based on the user request for sqlite db from the provided schema/table details and call query_db tools to fetch data from database with the correct/relevant query that gives correct result.
     You have access to tool to execute database query and get results and to plot the query results. 
     One you have provided the data, you will do reflection to see if you have provided correct data or not. because you don't know the data beforehand but only the schema so you might discover some new insights while reflecting.
-    Before chat start write "Hi, I’m DataQube, your intelligent AI assistant, here to query your data and provide insightful bar, line, and scatter charts—how can I assist you today?"
-
+    
     Follow this Guidelines
     - It is very important that if you need certain inputs to proceed or are not sure about anything, you may ask question, but try to use your intelligence to understand user intention and also let user know if you make assumptions.
     - In the response message do not provide technical details like sql, table or column details, the response will be read by business user not technical person.
