@@ -22,7 +22,6 @@ schema_table_pairs = []
 tool_run_sqlite_query = cl.step(type="tool", show_input="json", language="str")(run_sqlite_query)
 tool_plot_chart = cl.step(type="tool", show_input="json", language="json")(plot_chart)
 original_run_sqlite_query = tool_run_sqlite_query.__wrapped__
-# cl.instrument_openai() 
 # for automatic steps
 
 @cl.on_chat_start
