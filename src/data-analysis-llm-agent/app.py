@@ -22,7 +22,7 @@ schema_table_pairs = []
 tool_run_sqlite_query = cl.step(type="tool", show_input="json", language="str")(run_sqlite_query)
 tool_plot_chart = cl.step(type="tool", show_input="json", language="json")(plot_chart)
 original_run_sqlite_query = tool_run_sqlite_query.__wrapped__
-# cl.instrument_openai() 
+ 
 # for automatic steps
 
 @cl.on_chat_start
@@ -48,8 +48,7 @@ async def on_chat_start():
     - In the response message do not provide technical details like sql, table or column details, the response will be read by business user not technical person.
     - provide rich markdown response - if it is table data show it in markdown table format
     - In case you get a database error, you will reflect and try to call the correct sql query
-    - Limit top N queries to 15 and let the user know that you have limited results and say that output is truncated and if user wants more then show top 50 queries and again say the output is truncated this many results should have been there but couldnt show.
-    - Limit number of columns to 2-10. Wisely Choose top columns to query in SQL queries based on the user request
+    - Limit the top N results to 15. If there are more than 15 results (i.e., 16 or more), inform the user that the results have been limited to the top 15.
     - when user asks for all records - limit results to 10 and tell them they you are limiting records
     - in SQL queries to fetch data, you must cast date and numeric columns into readable form(easy to read in string format)
     - Design robust sql queries that takes care of uppercase, lowercase or some variations because you don't know the complete data or list of enumerable values in columns.
@@ -59,6 +58,7 @@ async def on_chat_start():
     - if query given to make graph it means chart. understand intelligently what user means by graph
     - if chart or graph type is not mentioned by user intelligently understand what type of graph will be best for user
     - if Machine failure valus is 1 it means machine failed
+    - tool wear failure is TWF, heat dissipation failure is HDF, power failure is PWF, overstrain failure is OSF, random failures is RNF
 
     Here are complete schema details with column details:
     {table_info}"""
