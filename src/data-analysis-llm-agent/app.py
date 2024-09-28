@@ -58,7 +58,7 @@ async def on_chat_start():
     - intelligently understand if output is to be given in table or not.
     - if query given to make graph it means chart. understand intelligently what user means by graph
     - if chart or graph type is not mentioned by user intelligently understand what type of graph will be best for user
-    - if any axes are missing for user specefied graph ask for the axes
+    - if Machine failure valus is 1 it means machine failed
 
     Here are complete schema details with column details:
     {table_info}"""
