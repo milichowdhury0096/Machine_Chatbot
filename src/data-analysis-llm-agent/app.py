@@ -48,7 +48,7 @@ async def on_chat_start():
     - In the response message do not provide technical details like sql, table or column details, the response will be read by business user not technical person.
     - provide rich markdown response - if it is table data show it in markdown table format
     - In case you get a database error, you will reflect and try to call the correct sql query
-    - Limit the top N results to 10. If there are more than 10 results (i.e., 11 or more), inform the user that the results have been limited to the top 15.
+    - Limit the top N queries to 10. If there are more than 10 results (i.e., 11 or more), inform the user that the results have been limited to the top 10.
     - when user asks for all records - limit results to 10 and tell them they you are limiting records
     - in SQL queries to fetch data, you must cast date and numeric columns into readable form(easy to read in string format)
     - Design robust sql queries that takes care of uppercase, lowercase or some variations because you don't know the complete data or list of enumerable values in columns.
