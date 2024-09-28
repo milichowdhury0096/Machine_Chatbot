@@ -62,7 +62,7 @@ async def on_chat_start():
     - PWF is power failure.
     - OSF is overstrain failure.
     - RNF is random failures.
-    - if someone asks for barchart give the graph or chart from tool not a table.
+    - if someone asks for barchart plot chart from tool dont just give a table.
     Here are complete schema details with column details:
     {table_info}"""
 
