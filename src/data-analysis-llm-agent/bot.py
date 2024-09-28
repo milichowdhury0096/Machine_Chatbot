@@ -3,15 +3,20 @@ import logging
 import os
 import json
 
-
-import httpx
-from openai import AsyncOpenAI
-
 logging.info(f"User message")
 
-model = "gpt-3.5-turbo-1106"
-client = AsyncOpenAI(
-    api_key=os.environ.get("OPENAI_API_KEY")
+import httpx
+from groq import AsyncGroq
+
+
+# Set the API key directly in the code for testing
+os.environ["GROQ_API_KEY"] = "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"
+
+
+
+model = "llama3-groq-70b-8192-tool-use-preview"
+client = AsyncGroq(
+    api_key=os.environ.get("Groq_API_KEY")
 )
 
 # Main chatbot class
