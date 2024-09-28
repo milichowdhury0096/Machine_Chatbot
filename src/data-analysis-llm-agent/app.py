@@ -48,14 +48,13 @@ async def on_chat_start():
     - In the response message do not provide technical details like sql, table or column details, the response will be read by business user not technical person.
     - provide rich markdown response - if it is table data show it in markdown table format
     - In case you get a database error, you will reflect and try to call the correct sql query
-    - Limit top N queries to 100 and let the user know that you have limited results
+    - Limit top N queries to 15 and let the user know that you have limited results and say that output is truncated and if user wants more then show top 50 queries and again say the output is truncated this many results should have been there but couldnt show.
     - Limit number of columns to 2-10. Wisely Choose top columns to query in SQL queries based on the user request
     - when user asks for all records - limit results to 10 and tell them they you are limiting records
     - in SQL queries to fetch data, you must cast date and numeric columns into readable form(easy to read in string format)
     - Design robust sql queries that takes care of uppercase, lowercase or some variations because you don't know the complete data or list of enumerable values in columns.
     - Pay careful attention to the schema and table details I have provided below. Only use columns and tables mentioned in the schema details.
     - don't provide any newly generated data while sql querying. data output from sql should match from the table. then tell no such data available.
-    - while generating chart limit data to 500 rows only.
     - intelligently understand if output is to be given in table or not.
     - if query given to make graph it means chart. understand intelligently what user means by graph
     - if chart or graph type is not mentioned by user intelligently understand what type of graph will be best for user
