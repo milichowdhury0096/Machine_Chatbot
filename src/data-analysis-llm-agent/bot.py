@@ -7,6 +7,7 @@ logging.info(f"User message")
 
 import httpx
 from groq import AsyncGroq
+import openai
 
 
 # Set the API key directly in the code for testing
@@ -14,9 +15,11 @@ os.environ["GROQ_API_KEY"] = "gsk_5RZSmDsdmy6DoXOqbIu5WGdyb3FYmQ8VbkoIlaXChPPBxz
 
 
 
-model = "llama3-groq-70b-8192-tool-use-preview"
-client = AsyncGroq(
-    api_key=os.environ.get("Groq_API_KEY")
+model="gpt-4o"
+# Assuming you're using the async version of OpenAI
+client = openai.AsyncOpenAI(
+    base_url="https://api.groq.com/openai/v1",
+    api_key=os.getenv("GROQ_API_KEY")
 )
 
 # Main chatbot class
