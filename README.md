@@ -2,6 +2,7 @@
 ## Max sql query shown on screen inchainlit is 10
 ## Charts included are line, scatter and bar chart
 ## Sample questions: 
+### Give me the first 5rows of the data
 ### Give a table of product id and air temperature with last five rows of the table
 ### Give a bar chart of product id and air temperature with last five rows of the table
 ### Average process temperature
